@@ -69,6 +69,8 @@ python etl.py
 
 The following packages are necessary to run the scripts: `pandas`, `psycopg2-binary`
 
+Note: `etl.py` requires an up-to-date version of `pandas`. Either update the package, or use `etl.v1.py`.
+
 ## Files in the repository
 
 - `create_tables.py` : Python script that creates the database, drops existing tables and creates the necessary tables.
