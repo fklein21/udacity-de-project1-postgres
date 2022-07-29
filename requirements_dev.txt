@@ -1,0 +1,7 @@
+pandas
+
+psycopg2-binary
+sql_queries
+
+ipykernel
+ipython-sql
