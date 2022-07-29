@@ -39,16 +39,17 @@ def insert_df_into_table(cur, sql_query, df):
 
 
 def process_all_song_files(cur, files):
-    """Insert song information into database.
+    """Inserts song information into database.
 
-    Reads a json file containing the song information,
-    extracts the information about the song and the artist.
+    Reads json files containing the song information,
+    extracts the information about each song and each artist.
     The song and artist information are written the the songs and the artists tables,
     respectively.
 
     Args:
         cur (psycopg2.extensions.cursor): Cursor to the postgres database.
-        filepath (str): Path of the json file containing the song information.
+        files (list(str)): A list of strings with the paths of the json files 
+                           containing the song information.
     """
     # open song files
     df = pd.concat((pd.read_json(file, lines=True) for file in files))
@@ -71,13 +72,14 @@ def process_all_song_files(cur, files):
 def process_all_log_files(cur, files):
     """"Inserts the log information into the database.
 
-    Reads the log infomation from a json file and extracts the information about the
+    Reads the log information from a json file and extracts the information about the
     songplay events, the users, and the timestamps. The information are written to the
     songplays, users, time tables, respectively.
 
     Args:
         cur (psycopg2.extensions.cursor): Cursor to the postgres database.
-        filepath (str): Path of the json file containing the log information.
+        files (list(str)): A list of strings with the paths of the json files 
+                           containing the log information.
     """
     # open log files
     df = pd.concat((pd.read_json(file, lines=True) for file in files), axis=0)
@@ -126,15 +128,15 @@ def process_data(cur, conn, filepath, func):
 
     The functions looks for all files with filename extension '.json' in filepath
     and its subdirectories.
-    Each file is processed separately by calling the function func with cur and the
-    respective filepath as parameters.
+    The files are then processed by calling the function func with cur and the
+    respective filepaths as parameters.
     This way the content of the files (log data or song data) is written to the
     respective tables in the database.
 
     Args:
         cur (psycopg2.extensions.cursor): Cursor to the postgres database.
         conn (psycopg2.extensions.connection): Connection to the database.
-        filepath (str): Path containing the json files in its sub directories.
+        filepath (str): Path of a directory containing the json files in its sub directories.
         func (function): Function used to process the files.
     """
     # get all files matching extension from directory
