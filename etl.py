@@ -1,12 +1,11 @@
 import os
 import glob
 import psycopg2
-import psycopg2.extras
 import pandas as pd
 from sql_queries import *
 
 
-def insert_df_into_table(cur, sql_query, df):
+def insert_df_into_table(cur, table, df):
     """Inserting values in a dataframe into the database.
 
     Inserts values from a dataframe into a table. 
@@ -14,28 +13,20 @@ def insert_df_into_table(cur, sql_query, df):
 
     Args:
         cur (psycopg2.extensions.cursor): Cursor to the postgres database.
-        sql_query (str): String with the sql query.
+        table (str): The name of the table to insert the data into.
         df (pandas.Dataframe): Dataframe with the data to insert into the table.
-    
-    Example:
-        Inserting song data into a songs table with the columns
-        (song_id, title, artist_id, year, duration)
-        sql_query = "INSERT INTO songs (song_id, title, artist_id, year, duration)\
-                     VALUES %s\
-                     ON CONFLICT (song_id)\
-                     DO UPDATE SET title = EXCLUDED.title,\
-                                   artist_id = EXCLUDED.artist_id,\
-                                   year = EXCLUDED.year,\
-                                   duration = EXCLUDED.duration;\
-        df = pandas.Dataframe with the same columns and same data types.
     """
-    data = [tuple(ii) for ii in df.to_numpy()]
 
-    try:
-        psycopg2.extras.execute_values(cur, sql_query, data)
-    except psycopg2.Error as e:
-        print("Error while inserting pandas.Dataframe into the table:")
-        print(e)
+    temp_dir = './temp_copy_to_sql/'
+    os.makedirs(temp_dir, exist_ok=True)
+    temp_file = temp_dir+'temp_copy_to_sql.csv'
+    df.to_csv(temp_file, header=False, index=False, sep='|', quotechar="'", na_rep='NaN')
+    with open(temp_file, 'r') as f_in:
+        cur.copy_from(f_in, table, sep='|')
+
+    os.remove(temp_file)
+    if not os.listdir(temp_dir):
+        os.rmdir(temp_dir)
 
 
 def process_all_song_files(cur, files):
@@ -59,14 +50,14 @@ def process_all_song_files(cur, files):
 
     # insert song records
     columns = ['song_id', 'title', 'artist_id', 'year', 'duration']
-    insert_df_into_table(cur, song_table_batch_insert, df[columns])
+    insert_df_into_table(cur, 'songs', df[columns])
 
     # insert artist record
     artist_columns = ['artist_id', 'artist_name', 'artist_location',
                       'artist_latitude', 'artist_longitude']
     df_artist_data = df[artist_columns]
     df_artist_data = df_artist_data.drop_duplicates(subset='artist_id', keep='last')
-    insert_df_into_table(cur, artist_table_batch_insert, df_artist_data)
+    insert_df_into_table(cur, 'artists', df_artist_data)
 
 
 def process_all_log_files(cur, files):
@@ -91,12 +82,12 @@ def process_all_log_files(cur, files):
     t = pd.to_datetime(df['ts'], unit='ms', origin='unix')
 
     # insert time data records
-    time_data = list(zip(t, t.dt.hour, t.dt.day, t.dt.isocalendar().week,
+    time_data = list(zip(t, t.dt.hour, t.dt.day, t.dt.week,
                      t.dt.month, t.dt.year, t.dt.weekday))
     column_labels = ['timestamp', 'hour', 'day', 'week', 'month', 'year', 'weekday']
     df_time = pd.DataFrame(time_data, columns=column_labels).drop_duplicates()
 
-    insert_df_into_table(cur, time_table_batch_insert, df_time)
+    insert_df_into_table(cur, 'time', df_time)
 
     # load user table
     user_columns = ['userId', 'firstName', 'lastName', 'gender', 'level']
@@ -109,7 +100,7 @@ def process_all_log_files(cur, files):
     df_user.drop_duplicates(subset='userId', keep='last', inplace=True)
 
     # insert user records
-    insert_df_into_table(cur, user_table_batch_insert, df_user)
+    insert_df_into_table(cur, 'users', df_user)
 
     # insert songplay records
     df['songplay_id'] = df['sessionId'].astype(str) + '-' + df['ts'].astype(str)
@@ -119,7 +110,8 @@ def process_all_log_files(cur, files):
     df_songplay = df[songplay_columns]
     # insert into temporary table
     cur.execute(temp_log_data_create)
-    insert_df_into_table(cur, sql_insert_temp_table, df_songplay)
+    insert_df_into_table(cur, 'temp_log_data', df_songplay)
+    # join with data from songs and artists, and insert into songplays
     cur.execute(join_log_data_songs_artists)
 
 
@@ -152,8 +144,14 @@ def process_data(cur, conn, filepath, func):
 
 
     # process files with the appropriate function
-    func(cur, all_files)
-    conn.commit()
+    try:
+        func(cur, all_files)
+        conn.commit()
+    except psycopg2.Error as e:
+        print('Inserting data did not complete without errors.')
+        print(e)
+        print('Connection rollback.')
+        conn.rollback()
     print(f'{num_files} files processed.')
 
 

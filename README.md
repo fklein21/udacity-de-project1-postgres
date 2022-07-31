@@ -77,7 +77,7 @@ Note: `etl.py` requires an up-to-date version of `pandas`. Either update the pac
 - `docker-compose.yaml` : Docker compose file to run a database server locally.
 - `etl.ipynb`: Jupyter notebook to develop the pipeline before putting the logic in the Python script.
 - `etl.py` and `etl.v1.py` : Both files do the same - inserting the information into the database as described in the preceding section. 
-  - `etl.py` inserts the information more efficiently by inserting the entries in a batch mode (takes 1,67s), whereas 
+  - `etl.py` inserts the information more efficiently by copying the data to a temporary csv file and reading it into database from this file (takes 1,54s), whereas 
   - `etl.v1.py` inserts the entries one by one which is much slower (takes 6,55s).
 - `README.md` : This readme file
 - `requirements_dev.txt` : Required packages to develop the pipeline.
@@ -91,7 +91,7 @@ The Star schema with the table for each songplay event at the center and songs, 
 
 The time table allows for easy partitions by different time intervals as e. g. hour of the day or day of the week.
 
-There are two versions of the ETL file. The file `etl.v1.py` uses the row-wise insertion as given by the project template. Since this is rather inefficient, at least for the insertion of many rows, a more efficient insertion was developed and used as `etl.py`. This more efficient process uses the function `execute_values` from the `psycopg2.extra` library.
+There are two versions of the ETL file. The file `etl.v1.py` uses the row-wise insertion as given by the project template. Since this is rather inefficient, at least for the insertion of many rows, a more efficient insertion was developed and used as `etl.py`. This more efficient process makes use of PostgreSQL COPY_FROM function. The data are written to a temporary csv file, and copy to the database from this file.
 
 ## Example queries
 

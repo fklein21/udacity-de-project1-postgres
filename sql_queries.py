@@ -122,22 +122,6 @@ user_table_insert = ("""
             level = EXCLUDED.level;
 """)
 
-user_table_batch_insert = ("""
-      INSERT INTO users (
-            user_id,
-            first_name, 
-            last_name, 
-            gender, 
-            level)
-      VALUES %s
-      ON CONFLICT (user_id)
-      DO UPDATE SET 
-            first_name = EXCLUDED.first_name,
-            last_name = EXCLUDED.last_name,
-            gender = EXCLUDED.gender,
-            level = EXCLUDED.level;
-""")
-
 song_table_insert = ("""
       INSERT INTO songs (
             song_id,
@@ -146,22 +130,6 @@ song_table_insert = ("""
             year,
             duration)
       VALUES (%s, %s, %s, %s, %s)
-      ON CONFLICT (song_id)
-      DO UPDATE SET 
-            title = EXCLUDED.title,
-            artist_id = EXCLUDED.artist_id,
-            year = EXCLUDED.year,
-            duration = EXCLUDED.duration;
-""")
-
-song_table_batch_insert = ("""
-      INSERT INTO songs (
-            song_id,
-            title,
-            artist_id,
-            year,
-            duration)
-      VALUES %s
       ON CONFLICT (song_id)
       DO UPDATE SET 
             title = EXCLUDED.title,
@@ -186,22 +154,6 @@ artist_table_insert = ("""
             longitude = EXCLUDED.longitude;
 """)
 
-artist_table_batch_insert = ("""
-      INSERT INTO artists (
-            artist_id, 
-            name, 
-            location, 
-            latitude, 
-            longitude)
-      VALUES %s
-      ON CONFLICT (artist_id)
-      DO UPDATE SET 
-            name = EXCLUDED.name,
-            location = EXCLUDED.location,
-            latitude = EXCLUDED.latitude,
-            longitude = EXCLUDED.longitude;
-""")
-
 
 time_table_insert = ("""
       INSERT INTO time (
@@ -215,46 +167,6 @@ time_table_insert = ("""
       VALUES (%s, %s, %s, %s, %s, %s, %s)
       ON CONFLICT (start_time)
       DO NOTHING;
-""")
-
-
-time_table_batch_insert = ("""
-      INSERT INTO time (
-            start_time, 
-            hour, 
-            day, 
-            week, 
-            month, 
-            year, 
-            weekday)
-      VALUES %s
-      ON CONFLICT (start_time)
-      DO NOTHING;
-""")
-
-sql_insert_temp_table = (""" 
-      INSERT INTO temp_log_data (
-          songplay_id, 
-          start_time, 
-          user_id, 
-          level, 
-          song, 
-          artist, 
-          session_id, 
-          location, 
-          user_agent,
-          length) 
-      VALUES %s
-      ON CONFLICT (songplay_id)
-      DO UPDATE SET 
-          start_time = EXCLUDED.start_time, 
-          user_id = EXCLUDED.user_id, 
-          level = EXCLUDED.level, 
-          song = EXCLUDED.song, 
-          artist = EXCLUDED.artist, 
-          session_id = EXCLUDED.session_id, 
-          location = EXCLUDED.location, 
-          user_agent = EXCLUDED.user_agent;
 """)
 
 # FIND SONGS

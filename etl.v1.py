@@ -53,7 +53,7 @@ def process_log_file(cur, filepath):
     t = pd.to_datetime(df['ts'], unit='ms', origin='unix')
 
     # insert time data records
-    time_data = list(zip(t, t.dt.hour, t.dt.day, t.dt.isocalendar().week,
+    time_data = list(zip(t, t.dt.hour, t.dt.day, t.dt.week,
                      t.dt.month, t.dt.year, t.dt.weekday))
     column_labels = ['timestamp', 'hour', 'day', 'week', 'month', 'year', 'weekday']
     time_df = pd.DataFrame(time_data, columns=column_labels)
