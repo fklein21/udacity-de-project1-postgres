@@ -11,7 +11,7 @@ time_table_drop = "DROP TABLE IF EXISTS time;"
 songplay_table_create = ("""
       CREATE TABLE IF NOT EXISTS 
             songplays (
-                  songplay_id varchar PRIMARY KEY, 
+                  songplay_id SERIAL PRIMARY KEY, 
                   start_time timestamp NOT NULL, 
                   user_id bigint NOT NULL, 
                   level varchar, 
@@ -67,7 +67,7 @@ time_table_create = ("""
 temp_log_data_create = ("""
       CREATE TEMP TABLE IF NOT EXISTS 
             temp_log_data (
-                  songplay_id varchar PRIMARY KEY, 
+                  songplay_id SERIAL PRIMARY KEY, 
                   start_time timestamp NOT NULL, 
                   user_id bigint NOT NULL, 
                   level varchar, 
@@ -94,15 +94,7 @@ songplay_table_insert = ("""
             user_agent) 
       VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
       ON CONFLICT (songplay_id)
-      DO UPDATE SET 
-            start_time = EXCLUDED.start_time, 
-            user_id = EXCLUDED.user_id, 
-            level = EXCLUDED.level, 
-            song_id = EXCLUDED.song_id, 
-            artist_id = EXCLUDED.artist_id, 
-            session_id = EXCLUDED.session_id, 
-            location = EXCLUDED.location, 
-            user_agent = EXCLUDED.user_agent;
+      DO NOTHING;
 
 """)
 
@@ -116,9 +108,6 @@ user_table_insert = ("""
       VALUES (%s, %s, %s, %s, %s)
       ON CONFLICT (user_id)
       DO UPDATE SET 
-            first_name = EXCLUDED.first_name,
-            last_name = EXCLUDED.last_name,
-            gender = EXCLUDED.gender,
             level = EXCLUDED.level;
 """)
 
@@ -131,11 +120,7 @@ song_table_insert = ("""
             duration)
       VALUES (%s, %s, %s, %s, %s)
       ON CONFLICT (song_id)
-      DO UPDATE SET 
-            title = EXCLUDED.title,
-            artist_id = EXCLUDED.artist_id,
-            year = EXCLUDED.year,
-            duration = EXCLUDED.duration;
+      DO NOTHING;
 """)
 
 artist_table_insert = ("""
@@ -147,11 +132,7 @@ artist_table_insert = ("""
             longitude)
       VALUES (%s, %s, %s, %s, %s)
       ON CONFLICT (artist_id)
-      DO UPDATE SET 
-            name = EXCLUDED.name,
-            location = EXCLUDED.location,
-            latitude = EXCLUDED.latitude,
-            longitude = EXCLUDED.longitude;
+      DO NOTHING;
 """)
 
 
@@ -184,7 +165,6 @@ song_select = ("""
 # JOIN LOG_DATA WITH SONGS AND ARTISTS TABLES
 join_log_data_songs_artists = ("""
       INSERT INTO songplays (
-          songplay_id, 
           start_time, 
           user_id, 
           level, 
@@ -194,7 +174,6 @@ join_log_data_songs_artists = ("""
           location, 
           user_agent) 
       SELECT 
-          tld.songplay_id, 
           tld.start_time, 
           tld.user_id, 
           tld.level, 
@@ -210,15 +189,7 @@ join_log_data_songs_artists = ("""
       LEFT JOIN artists a ON
           tld.artist = a.name
       ON CONFLICT (songplay_id)
-      DO UPDATE SET 
-            start_time = EXCLUDED.start_time, 
-            user_id = EXCLUDED.user_id, 
-            level = EXCLUDED.level, 
-            song_id = EXCLUDED.song_id, 
-            artist_id = EXCLUDED.artist_id, 
-            session_id = EXCLUDED.session_id, 
-            location = EXCLUDED.location, 
-            user_agent = EXCLUDED.user_agent;
+      DO NOTHING;
 """)
 
 

@@ -5,7 +5,7 @@ import pandas as pd
 from sql_queries import *
 
 
-def insert_df_into_table(cur, table, df):
+def insert_df_into_table(cur, table, df, columns=None):
     """Inserting values in a dataframe into the database.
 
     Inserts values from a dataframe into a table. 
@@ -15,6 +15,9 @@ def insert_df_into_table(cur, table, df):
         cur (psycopg2.extensions.cursor): Cursor to the postgres database.
         table (str): The name of the table to insert the data into.
         df (pandas.Dataframe): Dataframe with the data to insert into the table.
+        columns (list(str)): Specifies the columns of the table to insert the data into.
+                             If None, the data will be inserted into the columns as
+                             they are in the table.
     """
 
     temp_dir = './temp_copy_to_sql/'
@@ -22,8 +25,7 @@ def insert_df_into_table(cur, table, df):
     temp_file = temp_dir+'temp_copy_to_sql.csv'
     df.to_csv(temp_file, header=False, index=False, sep='|', quotechar="'", na_rep='NaN')
     with open(temp_file, 'r') as f_in:
-        cur.copy_from(f_in, table, sep='|')
-
+        cur.copy_from(f_in, table, sep='|', columns=columns)
     os.remove(temp_file)
     if not os.listdir(temp_dir):
         os.rmdir(temp_dir)
@@ -103,14 +105,14 @@ def process_all_log_files(cur, files):
     insert_df_into_table(cur, 'users', df_user)
 
     # insert songplay records
-    df['songplay_id'] = df['sessionId'].astype(str) + '-' + df['ts'].astype(str)
     df['start_time'] = pd.to_datetime(df.ts, unit='ms', origin='unix')
-    songplay_columns = ['songplay_id', 'start_time', 'userId', 'level', 'song', 
+    songplay_columns = ['start_time', 'userId', 'level', 'song', 
                         'artist', 'sessionId', 'location', 'userAgent', 'length']
     df_songplay = df[songplay_columns]
     # insert into temporary table
     cur.execute(temp_log_data_create)
-    insert_df_into_table(cur, 'temp_log_data', df_songplay)
+    temp_log_data_columns = ['start_time', 'user_id', 'level', 'song', 'artist', 'session_id', 'location', 'user_agent', 'length']
+    insert_df_into_table(cur, 'temp_log_data', df_songplay, temp_log_data_columns)
     # join with data from songs and artists, and insert into songplays
     cur.execute(join_log_data_songs_artists)
 
